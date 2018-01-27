@@ -32,10 +32,10 @@ public class VKPhotoDownloader {
         //https://oauth.vk.com/authorize?client_id=CLIENT_ID&display=page&redirect_uri=&scope=photos&response_type=code&v=5.71
         System.out.println("Starting VKPhotoDownloader");
 
-        Integer photosToDownload = 200;
+        Integer photosToDownload = 50;
 
         String code = args[0];
-        //String code = "1ae3e25a5d81220de4";
+        //String code = "1e7d541aaf703cde66";
 
         List<User> friends = new ArrayList<>();
         File photoDirectory = new File("photo");
@@ -82,6 +82,7 @@ public class VKPhotoDownloader {
                         .ownerId(user.getId())
                         .skipHidden(false)
                         .photoSizes(true)
+                        .unsafeParam("extended", 1)
                         .executeAsString();
                 parsePhotos(user, response);
                 savePhotosJSON(user, response);
@@ -109,7 +110,21 @@ public class VKPhotoDownloader {
          System.out.println("Photos count:" + count);
          user.setPhotoCount(count);
 
-         JsonArray photosArray = photosJson.getAsJsonObject().get("items").getAsJsonArray();
+         JsonArray photosArrayJson = photosJson.getAsJsonObject().get("items").getAsJsonArray();
+
+         List<JsonElement> photosArray = new ArrayList<>();
+         for(JsonElement photo : photosArrayJson) {
+             photosArray.add(photo);
+         }
+
+         Collections.sort(photosArray, new Comparator<JsonElement>() {
+             public int compare(JsonElement photo1, JsonElement photo2) {
+                 Integer likes1 = photo1.getAsJsonObject().get("likes").getAsJsonObject().get("count").getAsInt();
+                 Integer likes2 = photo2.getAsJsonObject().get("likes").getAsJsonObject().get("count").getAsInt();
+
+                 return (int) Float.compare(likes2, likes1);
+             }
+         });
 
          for(JsonElement photo : photosArray) {
              JsonArray sizes = photo.getAsJsonObject().get("sizes").getAsJsonArray();
