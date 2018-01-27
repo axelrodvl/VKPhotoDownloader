@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Created by Vadim Axelrod (vadim@axelrod.co) on 27.01.2018.
  */
-public class Main {
+public class VKPhotoDownloader {
     private final static TokenStorage tokenStorage = new TokenStorageImpl();
 
     public static void main(String[] args) throws Exception {
