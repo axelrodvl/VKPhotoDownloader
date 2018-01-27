@@ -30,10 +30,12 @@ public class VKPhotoDownloader {
     public static void main(String[] args) throws Exception {
         //String code = getCode(tokenStorage.getAppId());
         //https://oauth.vk.com/authorize?client_id=CLIENT_ID&display=page&redirect_uri=&scope=photos&response_type=code&v=5.71
-        //String code = "2995f2313f463cc582";
+        System.out.println("Starting VKPhotoDownloader");
+
+        Integer photosToDownload = 200;
 
         String code = args[0];
-        Integer photosToDownload = Integer.valueOf(args[1]);
+        //String code = "1ae3e25a5d81220de4";
 
         List<User> friends = new ArrayList<>();
         File photoDirectory = new File("photo");
@@ -56,7 +58,7 @@ public class VKPhotoDownloader {
 
         JsonElement friendsJson = new JsonParser().parse(response).getAsJsonObject().get("response");
         Integer count = friendsJson.getAsJsonObject().get("count").getAsInt();
-        System.out.println("Friends count:" + count);
+        System.out.println("Friends total count:" + count);
 
         JsonArray friendsArray = friendsJson.getAsJsonObject().get("items").getAsJsonArray();
         for(JsonElement friend : friendsArray) {
@@ -71,15 +73,18 @@ public class VKPhotoDownloader {
                 friends.add(user);
             }
         }
+        System.out.println("Friends (FEMALE) total count:" + friends.size());
 
         for(User user : friends) {
             try {
-                parsePhotos(user, vk.photos().getAll(actor)
+                response = vk.photos().getAll(actor)
                         .count(photosToDownload)
                         .ownerId(user.getId())
                         .skipHidden(false)
                         .photoSizes(true)
-                        .executeAsString());
+                        .executeAsString();
+                parsePhotos(user, response);
+                savePhotosJSON(user, response);
             } catch (Exception ex) {
                 System.out.println("Unable to get photos list for user" + user);
             }
@@ -98,8 +103,6 @@ public class VKPhotoDownloader {
     }
 
      private static void parsePhotos(User user, String response) throws Exception {
-         savePhotosJSON(user, response);
-
          JsonElement photosJson = new JsonParser().parse(response).getAsJsonObject().get("response");
 
          Integer count = photosJson.getAsJsonObject().get("count").getAsInt();
