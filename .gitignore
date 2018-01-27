@@ -10,6 +10,6 @@
 .metadata
 **/bin/**
 
-src/main/java/co/axelrod/vkphotodownloader/config/TokenStorageImpl.java
+src/main/java/co/axelrod/vk/config/TokenStorageImpl.java
 photo
 src/main/resources/photo
