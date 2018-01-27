@@ -3,6 +3,7 @@ package co.axelrod.vk;
 import co.axelrod.vk.config.TokenStorage;
 import co.axelrod.vk.config.TokenStorageImpl;
 import co.axelrod.vk.model.User;
+import co.axelrod.vk.util.StringUtils;
 import com.google.gson.*;
 import com.vk.api.sdk.client.TransportClient;
 import com.vk.api.sdk.client.VkApiClient;
@@ -12,14 +13,13 @@ import com.vk.api.sdk.objects.UserAuthResponse;
 import com.vk.api.sdk.queries.friends.FriendsGetOrder;
 import com.vk.api.sdk.queries.users.UserField;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+
+import static co.axelrod.vk.util.FileUtils.delete;
 
 /**
  * Created by Vadim Axelrod (vadim@axelrod.co) on 27.01.2018.
@@ -30,15 +30,22 @@ public class VKPhotoDownloader {
     public static void main(String[] args) throws Exception {
         //String code = getCode(tokenStorage.getAppId());
         //https://oauth.vk.com/authorize?client_id=CLIENT_ID&display=page&redirect_uri=&scope=photos&response_type=code&v=5.71
-        String code = "06c721d6ae6921343a";
+        //String code = "2995f2313f463cc582";
+
+        String code = args[0];
+        Integer photosToDownload = Integer.valueOf(args[1]);
 
         List<User> friends = new ArrayList<>();
+        File photoDirectory = new File("photo");
+        if (photoDirectory.exists()) {
+            delete(photoDirectory);
+        }
 
         TransportClient transportClient = HttpTransportClient.getInstance();
         VkApiClient vk = new VkApiClient(transportClient);
 
         UserAuthResponse authResponse = vk.oauth()
-                .userAuthorizationCodeFlow(Integer.valueOf(tokenStorage.getAppId()), tokenStorage.getClientSecret(), "", code)
+                .userAuthorizationCodeFlow(Integer.valueOf(tokenStorage.getAppId()), tokenStorage.getClientSecret(), "http://localhost:4567/auth", code)
                 .execute();
 
         UserActor actor = new UserActor(authResponse.getUserId(), authResponse.getAccessToken());
@@ -53,21 +60,22 @@ public class VKPhotoDownloader {
 
         JsonArray friendsArray = friendsJson.getAsJsonObject().get("items").getAsJsonArray();
         for(JsonElement friend : friendsArray) {
-            User user = new User(
-                    friend.getAsJsonObject().get("id").getAsInt(),
-                    friend.getAsJsonObject().get("first_name").getAsString(),
-                    friend.getAsJsonObject().get("last_name").getAsString(),
-                    friend.getAsJsonObject().get("screen_name").getAsString(),
-                    friend.getAsJsonObject().get("sex").getAsInt(),
-                    0,
-                    new ArrayList<>());
-            friends.add(user);
+            if(friend.getAsJsonObject().get("sex").getAsInt() == 1) {
+                User user = new User(
+                        friend.getAsJsonObject().get("id").getAsInt(),
+                        friend.getAsJsonObject().get("first_name").getAsString(),
+                        friend.getAsJsonObject().get("last_name").getAsString(),
+                        friend.getAsJsonObject().get("sex").getAsInt(),
+                        0,
+                        new HashMap<>());
+                friends.add(user);
+            }
         }
 
         for(User user : friends) {
             try {
                 parsePhotos(user, vk.photos().getAll(actor)
-                        .count(10)
+                        .count(photosToDownload)
                         .ownerId(user.getId())
                         .skipHidden(false)
                         .photoSizes(true)
@@ -80,9 +88,8 @@ public class VKPhotoDownloader {
         for(User user : friends) {
             System.out.println(user);
             try {
-                int i = 0;
-                for(String url : user.getPhotoUrls()) {
-                    downloadPhoto(user, url, i++);
+                for(Map.Entry<String, String> photo : user.getPhotoUrls().entrySet()) {
+                    downloadPhoto(user, photo);
                 }
             } catch (Exception ex) {
                 System.out.println("Unable to download photo for user: " + user + "\n" + ex.getMessage());
@@ -91,6 +98,8 @@ public class VKPhotoDownloader {
     }
 
      private static void parsePhotos(User user, String response) throws Exception {
+         savePhotosJSON(user, response);
+
          JsonElement photosJson = new JsonParser().parse(response).getAsJsonObject().get("response");
 
          Integer count = photosJson.getAsJsonObject().get("count").getAsInt();
@@ -101,25 +110,52 @@ public class VKPhotoDownloader {
 
          for(JsonElement photo : photosArray) {
              JsonArray sizes = photo.getAsJsonObject().get("sizes").getAsJsonArray();
-             // Последний - с максимальным размером ("type" : "z")
-             user.getPhotoUrls().add(sizes.get(sizes.size() - 1).getAsJsonObject().get("src").getAsString());
+             // Последний - с максимальным размером ("type" : "z") используется только для отображения в дальнейшем
+
+             // Первый с минимальным размером отдаем нейронке
+             user.getPhotoUrls().put(photo.getAsJsonObject().get("id").getAsString(),
+                     sizes.get(0).getAsJsonObject().get("src").getAsString());
          }
      }
 
-    private static void downloadPhoto(User user, String url, Integer id) throws Exception {
-        String username = user.getFirstName() + "_" + user.getLastName();
-        String targetDirectory = "photo/" + username;
+    private static void downloadPhoto(User user, Map.Entry<String, String> photo) throws Exception {
+        String username = StringUtils.transliterate(user.getFirstName() + "_" + user.getLastName());
+        String targetDirectory = "photo/" + user.getId();
 
         File userDirectory = new File(targetDirectory);
         if (!userDirectory.exists()) {
             userDirectory.mkdirs();
         }
 
-        URL website = new URL(url);
-        ReadableByteChannel rbc = Channels.newChannel(website.openStream());
-        String fileName = targetDirectory + "/" + username + "_" + id + ".jpg";
-        System.out.println(url + " to " + fileName);
-        FileOutputStream fos = new FileOutputStream(fileName);
-        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        String filePath = targetDirectory + "/" + photo.getKey() + ".jpg";
+
+        // Check if photo already exists
+        File photoFile = new File(filePath);
+        if(!photoFile.exists()) {
+            System.out.println("Downloading " + photo.getValue() + " to " + filePath);
+
+            URL website = new URL(photo.getValue());
+            ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+            FileOutputStream fos = new FileOutputStream(filePath);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        } else {
+            System.out.println("Photo " + photo.getValue() + " already exists in " + filePath);
+        }
+    }
+
+    private static void savePhotosJSON(User user, String response) throws Exception {
+        String targetDirectory = "users";
+
+        File userDirectory = new File(targetDirectory);
+        if (!userDirectory.exists()) {
+            userDirectory.mkdirs();
+        }
+
+        try (PrintStream out = new PrintStream(new FileOutputStream("users/" + user.getId() + ".json"))) {
+            out.println(response);
+        }
+
+        InputStream is = new FileInputStream("users/" + user.getId() + ".json");
+        BufferedReader buf = new BufferedReader(new InputStreamReader(is));
     }
 }
