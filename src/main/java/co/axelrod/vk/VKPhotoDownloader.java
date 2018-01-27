@@ -113,11 +113,14 @@ public class VKPhotoDownloader {
 
          for(JsonElement photo : photosArray) {
              JsonArray sizes = photo.getAsJsonObject().get("sizes").getAsJsonArray();
-             // Последний - с максимальным размером ("type" : "z") используется только для отображения в дальнейшем
 
-             // Первый с минимальным размером отдаем нейронке
-             user.getPhotoUrls().put(photo.getAsJsonObject().get("id").getAsString(),
-                     sizes.get(0).getAsJsonObject().get("src").getAsString());
+             for(JsonElement size : sizes) {
+                 if(size.getAsJsonObject().get("type").getAsString().equals("r")) {
+                     user.getPhotoUrls().put(photo.getAsJsonObject().get("id").getAsString(),
+                             size.getAsJsonObject().get("src").getAsString());
+                     break;
+                 }
+             }
          }
      }
 
