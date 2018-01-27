@@ -1,8 +1,8 @@
-package co.axelrod.vkphotodownloader;
+package co.axelrod.vk;
 
-import co.axelrod.vkphotodownloader.config.TokenStorage;
-import co.axelrod.vkphotodownloader.config.TokenStorageImpl;
-import co.axelrod.vkphotodownloader.model.User;
+import co.axelrod.vk.config.TokenStorage;
+import co.axelrod.vk.config.TokenStorageImpl;
+import co.axelrod.vk.model.User;
 import com.google.gson.*;
 import com.vk.api.sdk.client.TransportClient;
 import com.vk.api.sdk.client.VkApiClient;

@@ -1,8 +1,4 @@
-package co.axelrod.vkphotodownloader.util;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+package co.axelrod.vk.util;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

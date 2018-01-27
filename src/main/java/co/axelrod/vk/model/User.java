@@ -1,4 +1,4 @@
-package co.axelrod.vkphotodownloader.model;
+package co.axelrod.vk.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
