@@ -131,13 +131,15 @@ public class VKPhotoDownloader {
              photoObject.setId(photo.getAsJsonObject().get("id").getAsString());
              photoObject.setLikes(photo.getAsJsonObject().get("likes").getAsJsonObject().get("count").getAsInt());
 
-             JsonArray sizes = photo.getAsJsonObject().get("sizes").getAsJsonArray();
+             if(photoObject.getLikes() != 0) {
+                 JsonArray sizes = photo.getAsJsonObject().get("sizes").getAsJsonArray();
 
-             for(JsonElement size : sizes) {
-                 if(size.getAsJsonObject().get("type").getAsString().equals("r")) {
-                     photoObject.setUrl(size.getAsJsonObject().get("src").getAsString());
-                     user.getPhotos().add(photoObject);
-                     break;
+                 for (JsonElement size : sizes) {
+                     if (size.getAsJsonObject().get("type").getAsString().equals("r")) {
+                         photoObject.setUrl(size.getAsJsonObject().get("src").getAsString());
+                         user.getPhotos().add(photoObject);
+                         break;
+                     }
                  }
              }
          }
