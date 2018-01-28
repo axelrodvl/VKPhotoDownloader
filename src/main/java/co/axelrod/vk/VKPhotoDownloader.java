@@ -34,7 +34,8 @@ public class VKPhotoDownloader {
 
         Integer photosToDownload = 50;
 
-        String code = args[0];
+        String domain = args[0];
+        String code = args[1];
         //String code = "1e7d541aaf703cde66";
 
         List<User> friends = new ArrayList<>();
@@ -47,7 +48,7 @@ public class VKPhotoDownloader {
         VkApiClient vk = new VkApiClient(transportClient);
 
         UserAuthResponse authResponse = vk.oauth()
-                .userAuthorizationCodeFlow(Integer.valueOf(tokenStorage.getAppId()), tokenStorage.getClientSecret(), "http://localhost:4567/auth", code)
+                .userAuthorizationCodeFlow(Integer.valueOf(tokenStorage.getAppId()), tokenStorage.getClientSecret(), "http://" + domain + ":4567/auth", code)
                 .execute();
 
         UserActor actor = new UserActor(authResponse.getUserId(), authResponse.getAccessToken());
