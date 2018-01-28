@@ -2,8 +2,8 @@ package co.axelrod.vk;
 
 import co.axelrod.vk.config.TokenStorage;
 import co.axelrod.vk.config.TokenStorageImpl;
+import co.axelrod.vk.model.Photo;
 import co.axelrod.vk.model.User;
-import co.axelrod.vk.util.StringUtils;
 import com.google.gson.*;
 import com.vk.api.sdk.client.TransportClient;
 import com.vk.api.sdk.client.VkApiClient;
@@ -69,7 +69,7 @@ public class VKPhotoDownloader {
                         friend.getAsJsonObject().get("last_name").getAsString(),
                         friend.getAsJsonObject().get("sex").getAsInt(),
                         0,
-                        new HashMap<>());
+                        new ArrayList<>());
                 friends.add(user);
             }
         }
@@ -94,7 +94,7 @@ public class VKPhotoDownloader {
         for(User user : friends) {
             System.out.println(user);
             try {
-                for(Map.Entry<String, String> photo : user.getPhotoUrls().entrySet()) {
+                for(Photo photo : user.getPhotos()) {
                     downloadPhoto(user, photo);
                 }
             } catch (Exception ex) {
@@ -127,20 +127,23 @@ public class VKPhotoDownloader {
          });
 
          for(JsonElement photo : photosArray) {
+             Photo photoObject = new Photo();
+             photoObject.setId(photo.getAsJsonObject().get("id").getAsString());
+             photoObject.setLikes(photo.getAsJsonObject().get("likes").getAsJsonObject().get("count").getAsInt());
+
              JsonArray sizes = photo.getAsJsonObject().get("sizes").getAsJsonArray();
 
              for(JsonElement size : sizes) {
                  if(size.getAsJsonObject().get("type").getAsString().equals("r")) {
-                     user.getPhotoUrls().put(photo.getAsJsonObject().get("id").getAsString(),
-                             size.getAsJsonObject().get("src").getAsString());
+                     photoObject.setUrl(size.getAsJsonObject().get("src").getAsString());
+                     user.getPhotos().add(photoObject);
                      break;
                  }
              }
          }
      }
 
-    private static void downloadPhoto(User user, Map.Entry<String, String> photo) throws Exception {
-        String username = StringUtils.transliterate(user.getFirstName() + "_" + user.getLastName());
+    private static void downloadPhoto(User user, Photo photo) throws Exception {
         String targetDirectory = "photo/" + user.getId();
 
         File userDirectory = new File(targetDirectory);
@@ -148,19 +151,19 @@ public class VKPhotoDownloader {
             userDirectory.mkdirs();
         }
 
-        String filePath = targetDirectory + "/" + photo.getKey() + ".jpg";
+        String filePath = targetDirectory + "/" + photo.getId() + "_" + photo.getLikes() + ".jpg";
 
         // Check if photo already exists
         File photoFile = new File(filePath);
         if(!photoFile.exists()) {
-            System.out.println("Downloading " + photo.getValue() + " to " + filePath);
+            System.out.println("Downloading " + photo.getUrl() + " to " + filePath);
 
-            URL website = new URL(photo.getValue());
+            URL website = new URL(photo.getUrl());
             ReadableByteChannel rbc = Channels.newChannel(website.openStream());
             FileOutputStream fos = new FileOutputStream(filePath);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         } else {
-            System.out.println("Photo " + photo.getValue() + " already exists in " + filePath);
+            System.out.println("Photo " + photo.getUrl() + " already exists in " + filePath);
         }
     }
 

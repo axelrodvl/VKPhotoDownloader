@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * Created by Vadim Axelrod (vadim@axelrod.co) on 27.01.2018.
@@ -19,7 +19,7 @@ public class User {
     private String lastName;
     private Integer sex;
     private Integer photoCount;
-    private Map<String, String> photoUrls;
+    private ArrayList<Photo> photos;
 
     @Override
     public String toString() {
