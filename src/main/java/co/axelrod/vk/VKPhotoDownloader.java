@@ -1,7 +1,6 @@
 package co.axelrod.vk;
 
 import co.axelrod.vk.config.TokenStorage;
-import co.axelrod.vk.config.TokenStorageImpl;
 import co.axelrod.vk.model.Photo;
 import co.axelrod.vk.model.User;
 import com.google.gson.*;
@@ -25,18 +24,18 @@ import static co.axelrod.vk.util.FileUtils.delete;
  * Created by Vadim Axelrod (vadim@axelrod.co) on 27.01.2018.
  */
 public class VKPhotoDownloader {
-    private final static TokenStorage tokenStorage = new TokenStorageImpl();
+    private String domain;
+    private TokenStorage tokenStorage;
 
-    public static void main(String[] args) throws Exception {
+    public VKPhotoDownloader(String domain, TokenStorage tokenStorage) {
+        this.domain = domain;
+        this.tokenStorage = tokenStorage;
+    }
+
+    public void downloadPhoto(String code, Integer photoCount) throws Exception {
         //String code = getCode(tokenStorage.getAppId());
         //https://oauth.vk.com/authorize?client_id=CLIENT_ID&display=page&redirect_uri=&scope=photos&response_type=code&v=5.71
         System.out.println("Starting VKPhotoDownloader");
-
-        Integer photosToDownload = 50;
-
-        String domain = args[0];
-        String code = args[1];
-        //String code = "1e7d541aaf703cde66";
 
         List<User> friends = new ArrayList<>();
         File photoDirectory = new File("photo");
@@ -79,7 +78,7 @@ public class VKPhotoDownloader {
         for(User user : friends) {
             try {
                 response = vk.photos().getAll(actor)
-                        .count(photosToDownload)
+                        .count(photoCount)
                         .ownerId(user.getId())
                         .skipHidden(false)
                         .photoSizes(true)
@@ -104,7 +103,7 @@ public class VKPhotoDownloader {
         }
     }
 
-     private static void parsePhotos(User user, String response) throws Exception {
+     private static void parsePhotos(User user, String response) {
          JsonElement photosJson = new JsonParser().parse(response).getAsJsonObject().get("response");
 
          Integer count = photosJson.getAsJsonObject().get("count").getAsInt();
@@ -151,7 +150,11 @@ public class VKPhotoDownloader {
 
         File userDirectory = new File(targetDirectory);
         if (!userDirectory.exists()) {
-            userDirectory.mkdirs();
+            if(userDirectory.mkdirs()) {
+                System.out.println("Target directory successfully created: " + targetDirectory);
+            } else {
+                System.err.println("WARNING! Unable to create target directory: " + targetDirectory);
+            }
         }
 
         String filePath = targetDirectory + "/" + photo.getId() + "_" + photo.getLikes() + ".jpg";
@@ -175,7 +178,11 @@ public class VKPhotoDownloader {
 
         File userDirectory = new File(targetDirectory);
         if (!userDirectory.exists()) {
-            userDirectory.mkdirs();
+            if(userDirectory.mkdirs()) {
+                System.out.println("Target directory successfully created: " + targetDirectory);
+            } else {
+                System.err.println("WARNING! Unable to create target directory: " + targetDirectory);
+            }
         }
 
         try (PrintStream out = new PrintStream(new FileOutputStream("users/" + user.getId() + ".json"))) {

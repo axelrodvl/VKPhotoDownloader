@@ -6,7 +6,7 @@
 
     <groupId>co.axelrod</groupId>
     <artifactId>vk-photo-downloader</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
 
     <build>
         <plugins>
@@ -30,7 +30,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>co.axelrod.vk.VKPhotoDownloader</mainClass>
+                                    <mainClass>co.axelrod.vk.Main</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>
