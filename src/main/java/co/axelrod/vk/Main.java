@@ -13,7 +13,7 @@ public class Main {
         Integer photosToDownload = 50;
         TokenStorage tokenStorage = new TokenStorageImpl();
 
-        VKPhotoDownloader vkPhotoDownloader = new VKPhotoDownloader(domain, tokenStorage);
+        VKPhotoDownloader vkPhotoDownloader = new VKPhotoDownloader(domain, tokenStorage, "photo", "users");
         vkPhotoDownloader.downloadPhoto(code, photosToDownload);
     }
 }

@@ -26,10 +26,14 @@ import static co.axelrod.vk.util.FileUtils.delete;
 public class VKPhotoDownloader {
     private String domain;
     private TokenStorage tokenStorage;
+    private String photoDirPath;
+    private String usersDirPath;
 
-    public VKPhotoDownloader(String domain, TokenStorage tokenStorage) {
+    public VKPhotoDownloader(String domain, TokenStorage tokenStorage, String photoDirPath, String usersDirPath) {
         this.domain = domain;
         this.tokenStorage = tokenStorage;
+        this.photoDirPath = photoDirPath;
+        this.usersDirPath = usersDirPath;
     }
 
     public void downloadPhoto(String code, Integer photoCount) throws Exception {
@@ -38,7 +42,7 @@ public class VKPhotoDownloader {
         System.out.println("Starting VKPhotoDownloader");
 
         List<User> friends = new ArrayList<>();
-        File photoDirectory = new File("photo");
+        File photoDirectory = new File(photoDirPath);
         if (photoDirectory.exists()) {
             delete(photoDirectory);
         }
@@ -103,7 +107,7 @@ public class VKPhotoDownloader {
         }
     }
 
-     private static void parsePhotos(User user, String response) {
+     private void parsePhotos(User user, String response) {
          JsonElement photosJson = new JsonParser().parse(response).getAsJsonObject().get("response");
 
          Integer count = photosJson.getAsJsonObject().get("count").getAsInt();
@@ -145,8 +149,8 @@ public class VKPhotoDownloader {
          }
      }
 
-    private static void downloadPhoto(User user, Photo photo) throws Exception {
-        String targetDirectory = "photo/" + user.getId();
+    private void downloadPhoto(User user, Photo photo) throws Exception {
+        String targetDirectory = photoDirPath + "/" + user.getId();
 
         File userDirectory = new File(targetDirectory);
         if (!userDirectory.exists()) {
@@ -173,19 +177,17 @@ public class VKPhotoDownloader {
         }
     }
 
-    private static void savePhotosJSON(User user, String response) throws Exception {
-        String targetDirectory = "users";
-
-        File userDirectory = new File(targetDirectory);
+    private void savePhotosJSON(User user, String response) throws Exception {
+        File userDirectory = new File(usersDirPath);
         if (!userDirectory.exists()) {
             if(userDirectory.mkdirs()) {
-                System.out.println("Target directory successfully created: " + targetDirectory);
+                System.out.println("Target directory successfully created: " + usersDirPath);
             } else {
-                System.err.println("WARNING! Unable to create target directory: " + targetDirectory);
+                System.err.println("WARNING! Unable to create target directory: " + usersDirPath);
             }
         }
 
-        try (PrintStream out = new PrintStream(new FileOutputStream("users/" + user.getId() + ".json"))) {
+        try (PrintStream out = new PrintStream(new FileOutputStream(usersDirPath + "/" + user.getId() + ".json"))) {
             out.println(response);
         }
 
